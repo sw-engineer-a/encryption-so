@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MH1721 Crypto</string>
-    <string name="run">Run encrypt, decrypt, sign, verify</string>
+    <string name="run">Run software RSA</string>
+    <string name="chip">Talk to MH1721</string>
+    <string name="pick_chip">Choose the MH1721</string>
 </resources>
