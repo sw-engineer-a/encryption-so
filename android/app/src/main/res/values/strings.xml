@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">MH1721 Crypto</string>
     <string name="run">Run software RSA</string>
-    <string name="chip">Talk to MH1721</string>
+    <string name="chip">Compare with MH1721</string>
+    <string name="modulus_hint">Modulus (hex)</string>
+    <string name="public_exponent_hint">Public exponent (hex)</string>
+    <string name="private_exponent_hint">Private exponent (hex)</string>
+    <string name="message_hint">Message</string>
+    <string name="default_message">hello from the android app</string>
     <string name="pick_chip">Choose the MH1721</string>
 </resources>

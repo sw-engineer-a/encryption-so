@@ -16,8 +16,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.mh1721.crypto.Mh1721Crypto;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private UsbManager usbManager;
     private TextView output;
     private BroadcastReceiver usbPermissionReceiver;
+    private KeyMaterial pendingKeys;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
         usbManager = (UsbManager) getSystemService(USB_SERVICE);
         output = findViewById(R.id.output);
         findViewById(R.id.run).setOnClickListener(v -> output.setText(runSoftwareDemo()));
-        findViewById(R.id.chip).setOnClickListener(v -> chooseChip());
+        findViewById(R.id.chip).setOnClickListener(v -> startCompare());
     }
 
     @Override
@@ -81,6 +80,16 @@ public class MainActivity extends AppCompatActivity {
         io.shutdownNow();
     }
 
+    private void startCompare() {
+        try {
+            pendingKeys = readKeys();
+        } catch (IllegalArgumentException error) {
+            output.setText(error.getMessage());
+            return;
+        }
+        chooseChip();
+    }
+
     private void chooseChip() {
         ArrayList<UsbDevice> devices = new ArrayList<>(usbManager.getDeviceList().values());
         if (devices.isEmpty()) {
@@ -118,11 +127,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void talk(UsbDevice device) {
+        KeyMaterial keys = pendingKeys;
+        if (keys == null) {
+            output.setText("Enter the modulus, both exponents, and a message.");
+            return;
+        }
         output.setText("Opening " + deviceLabel(device));
         io.execute(() -> {
             String text;
             try (UsbChipLink link = UsbChipLink.open(usbManager, device)) {
-                text = deviceLabel(device) + "\n" + ChipSession.exchange(link);
+                text = deviceLabel(device) + "\n" + ChipSession.compare(link, keys);
             } catch (Exception error) {
                 text = error.getClass().getSimpleName() + ": " + error.getMessage();
             }
@@ -148,27 +162,37 @@ public class MainActivity extends AppCompatActivity {
 
     private String runSoftwareDemo() {
         try {
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-            generator.initialize(2048);
-            KeyPair pair = generator.generateKeyPair();
+            KeyMaterial keys = readKeys();
             CryptoClient crypto = new CryptoClient(
-                    pair.getPublic().getEncoded(),
-                    pair.getPrivate().getEncoded());
-
-            String message = "hello from the android app";
-            byte[] cipher = crypto.seal(message);
-            String opened = crypto.open(cipher);
-            byte[] signature = crypto.sign(message);
-            boolean verified = crypto.verify(message, signature);
-
-            return "software key, no chip"
+                    keys.modulus, keys.publicExponent, keys.privateExponent);
+            byte[] cipher = crypto.seal(keys.message);
+            String opened = cipher == null ? null : crypto.open(cipher);
+            byte[] signature = crypto.sign(keys.message);
+            boolean verified = signature != null && crypto.verify(keys.message, signature);
+            return "software key from input, no chip"
                     + "\nversion: " + Mh1721Crypto.version()
-                    + "\nmessage: " + message
+                    + "\nmessage: " + keys.message
                     + "\nopened: " + opened
+                    + "\ndecrypt matches: " + keys.message.equals(opened)
                     + "\nverify: " + verified
+                    + "\nsignature: " + Hex.format(signature)
                     + "\ncipher bytes: " + (cipher == null ? 0 : cipher.length);
+        } catch (IllegalArgumentException error) {
+            return error.getMessage();
         } catch (Throwable error) {
             return error.toString();
         }
+    }
+
+    private KeyMaterial readKeys() {
+        return KeyMaterial.parse(
+                textOf(R.id.modulus),
+                textOf(R.id.public_exponent),
+                textOf(R.id.private_exponent),
+                textOf(R.id.message));
+    }
+
+    private String textOf(int id) {
+        return ((android.widget.EditText) findViewById(id)).getText().toString();
     }
 }

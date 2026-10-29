@@ -29,6 +29,16 @@ public final class CryptoClient {
         this.privateExponent = unsigned(priv.getPrivateExponent());
     }
 
+    public CryptoClient(byte[] modulus, byte[] publicExponent, byte[] privateExponent) {
+        if (modulus == null || publicExponent == null || privateExponent == null
+                || modulus.length == 0 || publicExponent.length == 0 || privateExponent.length == 0) {
+            throw new IllegalArgumentException("modulus and both exponents are required");
+        }
+        this.modulus = modulus.clone();
+        this.publicExponent = publicExponent.clone();
+        this.privateExponent = privateExponent.clone();
+    }
+
     public byte[] seal(String message) {
         return Mh1721Crypto.encrypt(modulus, publicExponent, message.getBytes(StandardCharsets.UTF_8));
     }
