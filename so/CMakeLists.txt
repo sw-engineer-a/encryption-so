@@ -7,9 +7,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(mh1721crypto SHARED
     src/bn.c
+    src/bn_arith.c
     src/sha256.c
     src/random.c
     src/rsa.c
+    src/mh_rsa.c
     src/mh1721_jni.c
 )
 

@@ -84,3 +84,11 @@ private static byte[] unsigned(BigInteger value) {
 ```
 
 Public encryption uses `modulus` and `publicExponent`. Private decryption and signing use `modulus` and `privateExponent`.
+
+## MH1721 chip API
+
+`include/mh_rsa.h` matches the chip's `mh_rsa.h` entry points: `MHRSA_Init`, `MHRSA_SetKey`, `MHRSA_CompleteKey`, `MHRSA_GenKey`, `MHRSA_Pub`, `MHRSA_Pri`, and `MHRSA_CrtPri`.
+
+`MHRSA_Pub` computes `input ^ E mod N`. `MHRSA_Pri` computes `input ^ D mod N`. `MHRSA_CrtPri` does the same private operation with `P`, `Q`, `Dp`, `Dq`, and `Qi`. None of these three adds padding. The PKCS#1 functions above stay separate.
+
+Build `src/bn.c`, `src/bn_arith.c`, and `src/mh_rsa.c` into the firmware. `MHRSA_GenKey` calls `mh_random()`.
